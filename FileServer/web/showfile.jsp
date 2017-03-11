@@ -10,14 +10,18 @@
         out.println("请先登陆");
         return;
     }
+
+    String tmpFile = (session.getAttribute("tmpFile") != null) ? (String) session.getAttribute("tmpFile") : "";
 %>
 <html>
 <head>
     <title><%=uname%>的文件</title>
     <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
     <script type="text/javascript">
+        var curDirLoc =<%=loc%>;
+
         $(document).ready(function () {
-            $.getJSON("showfile.json?loc=<%=loc%>", function (result) {
+            $.getJSON("showfile.json?loc=" + curDirLoc, function (result) {
                 result = jsonSort(result, "file");
                 for (var i = 0; i < result.length; i++) {
                     var uFile = result[i];
@@ -26,24 +30,90 @@
                         fType = "文件";
                     }
                     var fName = uFile.name;
+                    var btnText = "<td><button onclick='delFile(\"" + fName + "\")'>删除</button><button onclick='rename(\"" + fName + "\")'>重命名</button><button onclick='selectFile(\"" + fName + "\")'>选择</button></td>";
                     if (uFile.file) {
-                        $(".fileTable").append("<tr><td><a href='" + uFile.loc + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td></tr>");
+                        $(".fileTable").append("<tr><td><a href='" + uFile.loc + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td>" + btnText + "</tr>");
                     } else {
-                        var url = encodeURIComponent("<%=loc%>" + uFile.name);
-                        $(".fileTable").append("<tr><td><a href='showfile.jsp?loc=" + url + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td></tr>");
+                        var url = encodeURIComponent(curDirLoc + uFile.name);
+                        $(".fileTable").append("<tr><td><a href='showfile.jsp?loc=" + url + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td>" + btnText + "</tr>");
                     }
                 }
             });
         });
 
         function backToDir() {
-            var url = decodeURIComponent("<%=loc%>");
+            var url = decodeURIComponent(curDirLoc);
             if (url != "/") {
                 url = url.substring(0, url.lastIndexOf("/"));
                 url = encodeURIComponent(url.substring(0, url.lastIndexOf("/")));
 //                alert(decodeURIComponent(url));
                 window.location.href = "showfile.jsp?loc=" + url;
             }
+        }
+
+        function newDir() {
+            var dirName = prompt("输入文件夹的名字");
+            if (dirName != null) {
+                $.post("fileAction.do", {
+                    code: "mkdir",
+                    dirLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + dirName)
+                }, function (data, status) {
+                    if (data == "200") {
+//                        alert("创建成功");
+                    } else {
+                        alert("出现错误");
+                    }
+                });
+            }
+            location.reload();
+        }
+
+        function delFile(fileName) {
+            if (confirm("确定删除???")) {
+                $.post("fileAction.do", {
+                    code: "del",
+                    fileLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + fileName)
+                }, function (data, status) {
+                    if (data == "200") {
+//                        alert("删除成功");
+                    } else {
+                        alert("出现错误");
+                    }
+                });
+                location.reload();
+            }
+        }
+
+        function rename(fileName) {
+            var tarName = prompt("输入新的名字");
+            if (tarName != null) {
+                $.post("fileAction.do", {
+                    code: "rename",
+                    fileLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + tarName),
+                    desFileName: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + fileName)
+                }, function (data, status) {
+                    if (data == "200") {
+//                        alert("删除成功");
+                    } else {
+                        alert("出现错误");
+                    }
+                });
+                location.reload();
+            }
+        }
+
+        function selectFile(fileName) {
+            $.post("fileAction.do", {
+                code: "select",
+                fileLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + fileName),
+            }, function (data, status) {
+                if (data == "200") {
+//                        alert("删除成功");
+                } else {
+                    alert("出现错误");
+                }
+            });
+            location.reload();
         }
 
         /*
@@ -82,6 +152,13 @@
     </script>
 </head>
 <body>
+<%
+    if (tmpFile != null) {
+%>
+<button></button>
+<%
+    }
+%>
 <table class="fileTable">
     <tr>
         <td>文件名</td>
@@ -92,6 +169,7 @@
     <tr>
         <td>
             <button onclick="backToDir()">返回上一级</button>
+            <button onclick="newDir()">新建文件夹</button>
         </td>
     </tr>
 </table>
