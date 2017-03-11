@@ -28,7 +28,7 @@ public class Login extends javax.servlet.http.HttpServlet {
             ResultSet rs = jdbc.getQuery(ps);
             if (rs.next()) {
                 request.getSession().setAttribute("uname", uname);
-                response.sendRedirect("file.jsp");
+                response.sendRedirect("showfile.jsp");
             } else {
                 PrintWriter out = response.getWriter();
                 out.println("用户名或密码错误");

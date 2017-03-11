@@ -14,6 +14,7 @@ public class UserFile {
     private String name;
     private String time;
     private boolean isFile = false;
+    private boolean isSelect = false;
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public UserFile(File f) {
@@ -55,5 +56,13 @@ public class UserFile {
 
     public void setFile(boolean file) {
         isFile = file;
+    }
+
+    public boolean isSelect() {
+        return isSelect;
+    }
+
+    public void setSelect(boolean select) {
+        isSelect = select;
     }
 }

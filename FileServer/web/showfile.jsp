@@ -1,3 +1,4 @@
+<%@ page import="java.util.ArrayList" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     request.setCharacterEncoding("UTF-8");
@@ -11,16 +12,28 @@
         return;
     }
 
-    String tmpFile = (session.getAttribute("tmpFile") != null) ? (String) session.getAttribute("tmpFile") : "";
+    ArrayList<String> tmpFiles = (ArrayList<String>) session.getAttribute("tmpFile");
 %>
 <html>
 <head>
     <title><%=uname%>的文件</title>
     <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="js/spark-md5.min.js"></script>
     <script type="text/javascript">
-        var curDirLoc =<%=loc%>;
+        var curDirLoc;
+        var fileMD5;
 
         $(document).ready(function () {
+            curDirLoc = getQueryString("loc");
+            if (curDirLoc == null || curDirLoc == "") {
+                curDirLoc = encodeURIComponent("/");
+            } else {
+                if (curDirLoc.lastIndexOf("/") != curDirLoc.length - 1) {
+                    curDirLoc += encodeURIComponent("/");
+                }
+            }
+            $(".curLoc").text("当前位置:" + decodeURIComponent(curDirLoc));
+            addFileChangeLis();
             $.getJSON("showfile.json?loc=" + curDirLoc, function (result) {
                 result = jsonSort(result, "file");
                 for (var i = 0; i < result.length; i++) {
@@ -30,12 +43,17 @@
                         fType = "文件";
                     }
                     var fName = uFile.name;
-                    var btnText = "<td><button onclick='delFile(\"" + fName + "\")'>删除</button><button onclick='rename(\"" + fName + "\")'>重命名</button><button onclick='selectFile(\"" + fName + "\")'>选择</button></td>";
+                    var btnText = "<button onclick='delFile(\"" + fName + "\")'>删除</button><button onclick='rename(\"" + fName + "\")'>重命名</button>";
+                    if (!uFile.select) {
+                        btnText += "<button onclick='selectFile(\"" + fName + "\")'>选择</button>";
+                    } else {
+                        btnText += "<button onclick='selectFile(\"" + fName + "\")'>取消选择</button>";
+                    }
                     if (uFile.file) {
-                        $(".fileTable").append("<tr><td><a href='" + uFile.loc + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td>" + btnText + "</tr>");
+                        $(".fileTable").append("<tr><td><a href='" + uFile.loc + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td><td>" + btnText + "</td></tr>");
                     } else {
                         var url = encodeURIComponent(curDirLoc + uFile.name);
-                        $(".fileTable").append("<tr><td><a href='showfile.jsp?loc=" + url + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td>" + btnText + "</tr>");
+                        $(".fileTable").append("<tr><td><a href='showfile.jsp?loc=" + url + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td><td>" + btnText + "</td></tr>");
                     }
                 }
             });
@@ -116,6 +134,95 @@
             location.reload();
         }
 
+        function copyFile() {
+            $.post("fileAction.do", {
+                code: "copy",
+                desFile: encodeURIComponent(decodeURIComponent(curDirLoc)),
+            }, function (data, status) {
+                if (data == "200") {
+//                        alert("删除成功");
+                } else {
+                    alert("出现错误");
+                }
+            });
+            location.reload();
+        }
+
+        function clearSelectFiles() {
+            $.post("fileAction.do", {
+                code: "clearSelect",
+            }, function (data, status) {
+                if (data == "200") {
+//                        alert("删除成功");
+                } else {
+                    alert("出现错误");
+                }
+            });
+            location.reload();
+        }
+
+        function moveFile() {
+            $.post("fileAction.do", {
+                code: "move",
+                desFile: encodeURIComponent(decodeURIComponent(curDirLoc)),
+            }, function (data, status) {
+                if (data == "200") {
+//                        alert("删除成功");
+                } else {
+                    alert("出现错误");
+                }
+            });
+            location.reload();
+        }
+
+        function submitForm() {
+            var fileName = $("#fileName").val();
+            $("#fileName").remove();
+            $("#formData").attr("action", "upload.do?fileloc=" + btoa(decodeURIComponent(curDirLoc)) + "&fileName=" + btoa(fileName) + "&md5=" + fileMD5);
+            $("#formData").submit();
+        }
+
+        function addFileChangeLis() {
+            document.getElementById("upFile").addEventListener("change", function () {
+                var path = document.getElementById("upFile").value;
+                $("#fileName").attr("value", path.substring(path.lastIndexOf("\\") + 1, path.length));
+
+                var fileReader = new FileReader();
+                var blobSlice = File.prototype.mozSlice || File.prototype.webkitSlice || File.prototype.slice;
+                var file = document.getElementById("upFile").files[0];
+                if (file != null) {
+                    var chunkSize = 2097152;
+                    var chunks = Math.ceil(file.size / chunkSize);
+                    var currentChunk = 0;
+                    var spark = new SparkMD5();
+                    fileReader.onload = function (e) {
+//                    console.log("读取文件", currentChunk + 1, "/", chunks);
+                        $("#info").text("读取文件中:" + ((currentChunk + 1) / chunks * 100).toFixed(3) + "%");
+                        //每块交由sparkMD5进行计算
+                        spark.appendBinary(e.target.result);
+                        currentChunk++;
+
+                        //如果文件处理完成计算MD5，如果还有分片继续处理
+                        if (currentChunk < chunks) {
+                            loadNext();
+                        } else {
+                            fileMD5 = spark.end().toUpperCase();
+                            $("#info").text("文件MD5:" + fileMD5);
+                            $("#btnSubmit").removeAttr("disabled");
+                        }
+                    };
+                }
+
+                function loadNext() {
+                    var start = currentChunk * chunkSize, end = start + chunkSize >= file.size ? file.size : start + chunkSize;
+
+                    fileReader.readAsBinaryString(blobSlice.call(file, start, end));
+                }
+
+                loadNext();
+            });
+        }
+
         /*
          * @description		根据某个字段实现对json数组的排序
          * @param	 array	要排序的json数组对象
@@ -149,28 +256,41 @@
             }
             return array;
         }
+
+        function getQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
     </script>
 </head>
 <body>
+<p class="curLoc"></p>
 <%
-    if (tmpFile != null) {
+    if (tmpFiles != null && tmpFiles.size() != 0) {
 %>
-<button></button>
+<button onclick="copyFile()">复制到此</button>
+<button onclick="moveFile()">移动到此</button>
+<button onclick="clearSelectFiles()">清空选择的文件</button>
+<a>已选择了<%=tmpFiles.size()%>个文件</a>
 <%
     }
 %>
+<form id="formData" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" id="upFile">
+    <input type="text" name="fileName" id="fileName" disabled="disabled">
+    <button id="btnSubmit" onclick="submitForm()" disabled="disabled">上载</button>
+</form>
+<p id="info"></p>
+<button onclick="backToDir()">返回上一级</button>
+<button onclick="newDir()">新建文件夹</button>
 <table class="fileTable">
     <tr>
         <td>文件名</td>
         <td>类型</td>
         <td>修改时间</td>
         <td>操作</td>
-    </tr>
-    <tr>
-        <td>
-            <button onclick="backToDir()">返回上一级</button>
-            <button onclick="newDir()">新建文件夹</button>
-        </td>
     </tr>
 </table>
 </body>

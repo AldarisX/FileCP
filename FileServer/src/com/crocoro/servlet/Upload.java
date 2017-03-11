@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,7 +32,7 @@ public class Upload extends HttpServlet {
         response.setCharacterEncoding("utf-8");
 
         //获取参数
-        String fileName = request.getParameter("fileName");
+        String fileName = new String(Base64Tool.decode(request.getParameter("fileName")));
         String fileLoc = new String(Base64Tool.decode(request.getParameter("fileloc")));
         String fileMD5 = request.getParameter("md5");
 
@@ -130,6 +131,8 @@ public class Upload extends HttpServlet {
                         jdbc.getUpdate(ps);
                         jdbc.setLimit(5);
                         new File(uploadPath + "/" + "null").delete();
+
+                        response.sendRedirect("showfile.jsp?loc=" + URLEncoder.encode(fileLoc, "UTF-8"));
                     }
                 }
             }

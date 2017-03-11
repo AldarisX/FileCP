@@ -1,5 +1,6 @@
 package com.crocoro.servlet;
 
+import com.crocoro.Config;
 import com.crocoro.model.UserFile;
 import net.sf.json.JSONArray;
 
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 
 /**
@@ -28,7 +30,7 @@ public class ShowFile extends HttpServlet {
             return;
         }
 
-        String loc = request.getParameter("loc");
+        String loc = URLDecoder.decode(request.getParameter("loc"), "UTF-8");
         if (loc == null) {
             loc = "/";
         }
@@ -36,12 +38,26 @@ public class ShowFile extends HttpServlet {
         //获取项目的路径
         String root = request.getSession().getServletContext().getRealPath("/");
         //取得用户请求的目录
-        File ugFile = new File(root, "/upload/" + uname + "/" + loc);
+        File ugFile = new File(root + "/upload/" + uname, loc);
         File[] ugFiles = ugFile.listFiles();
 
+        //获取已经选择的文件列表
+        ArrayList<String> tmpFiles = (ArrayList<String>) request.getSession().getAttribute("tmpFile");
+        ArrayList<File> tmpFilesList = new ArrayList<>();
+        if (tmpFiles != null) {
+            //转化选择列表
+            for (String tmpFile : tmpFiles) {
+                tmpFilesList.add(new File(Config.warLoc + "/upload/" + uname + tmpFile));
+            }
+        }
         ArrayList<UserFile> userFiles = new ArrayList<>();
         for (File f : ugFiles) {
-            userFiles.add(new UserFile(f));
+            UserFile uFile = new UserFile(f);
+            // 如果在选择列表里
+            if (tmpFilesList.indexOf(new File(Config.warLoc + uFile.getLoc())) != -1) {
+                uFile.setSelect(true);
+            }
+            userFiles.add(uFile);
         }
 
         PrintWriter out = response.getWriter();
