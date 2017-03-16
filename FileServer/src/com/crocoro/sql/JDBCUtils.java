@@ -91,7 +91,7 @@ public class JDBCUtils {
         JSONObject jobj = JSONObject.fromObject(dbConfig);
 
         try {
-            String path = Config.warLoc + "WEB-INF/classes/db.json";
+            String path = Config.warLoc + "WEB-INF/classes/Config.json";
             File file = new File(path);
             BufferedWriter ow = new BufferedWriter(new FileWriter(file));
             ow.write(jobj.toString());
@@ -167,22 +167,22 @@ public class JDBCUtils {
         try {
             rs.close();
         } catch (Exception e) {
-            // TODO: handle exception
+
         }
         try {
             st.close();
         } catch (Exception e) {
-            // TODO: handle exception
+
         }
         try {
             pst.close();
         } catch (Exception e) {
-            // TODO: handle exception
+
         }
         try {
             conn.close();
         } catch (Exception e) {
-            // TODO: handle exception
+
         }
 
         timer.cancel();

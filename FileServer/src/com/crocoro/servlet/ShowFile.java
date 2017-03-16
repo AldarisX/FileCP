@@ -1,6 +1,7 @@
 package com.crocoro.servlet;
 
 import com.crocoro.Config;
+import com.crocoro.model.User;
 import com.crocoro.model.UserFile;
 import net.sf.json.JSONArray;
 
@@ -23,11 +24,25 @@ public class ShowFile extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("utf-8");
         response.setCharacterEncoding("utf-8");
+        response.setContentType("application/json");
 
-        //取得用户名
-        String uname = (request.getSession().getAttribute("uname") != null) ? (String) request.getSession().getAttribute("uname") : "";
-        if (uname.equals("")) {
-            return;
+        String uname;
+        String token = request.getParameter("token");
+        if (token != null) {
+            User u = new User();
+            u.getUserByToken(token);
+            if (u.getUname() == null) {
+                response.reset();
+                return;
+            }
+            uname = u.getUname();
+        } else {
+            //取得用户名
+            uname = (request.getSession().getAttribute("uname") != null) ? (String) request.getSession().getAttribute("uname") : "";
+            if (uname.equals("")) {
+                response.reset();
+                return;
+            }
         }
 
         String loc = URLDecoder.decode(request.getParameter("loc"), "UTF-8");

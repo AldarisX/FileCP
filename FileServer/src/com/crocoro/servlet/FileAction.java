@@ -1,6 +1,7 @@
 package com.crocoro.servlet;
 
 import com.crocoro.Config;
+import com.crocoro.model.User;
 import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.FileUtils;
 
@@ -24,40 +25,63 @@ public class FileAction extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String code = request.getParameter("code");
         if (code == null) {
+            response.reset();
             return;
         }
-        String uname = (String) request.getSession().getAttribute("uname");
-        if (uname == null) {
-            return;
+        String uname;
+        String token = request.getParameter("token");
+        if (token != null) {
+            User u = new User();
+            u.getUserByToken(token);
+            if (u.getUname() == null) {
+                response.reset();
+                return;
+            }
+            uname = u.getUname();
+        } else {
+            //取得用户名
+            uname = (request.getSession().getAttribute("uname") != null) ? (String) request.getSession().getAttribute("uname") : "";
+            if (uname.equals("")) {
+                response.reset();
+                return;
+            }
         }
         switch (code) {
             case "del":
                 if (!fileDel(uname, request.getParameter("fileLoc"), request)) {
+                    response.reset();
                     return;
                 }
                 break;
             case "mkdir":
                 if (!mkdir(uname, request.getParameter("dirLoc"))) {
+                    response.reset();
                     return;
                 }
                 break;
             case "rename":
                 if (!rename(uname, request.getParameter("fileLoc"), request.getParameter("desFileName"), request)) {
+                    response.reset();
                     return;
                 }
                 break;
             case "move":
                 if (!doMoveFile(uname, request.getParameter("desFile"), request)) {
+                    response.reset();
                     return;
                 }
+                request.getSession().removeAttribute("tmpFile");
                 break;
             case "copy":
                 if (!doCopyFile(uname, request.getParameter("desFile"), request)) {
+                    response.reset();
                     return;
                 }
+                request.getSession().removeAttribute("tmpFile");
                 break;
             case "select":
                 if (!doSelectFile(request.getParameter("fileLoc"), request)) {
+                    response.reset();
                     return;
                 }
                 break;
@@ -65,6 +89,7 @@ public class FileAction extends HttpServlet {
                 request.getSession().removeAttribute("tmpFile");
                 break;
             default:
+                response.reset();
                 return;
         }
         PrintWriter out = response.getWriter();
@@ -159,16 +184,23 @@ public class FileAction extends HttpServlet {
         for (String tmpFile : tmpFiles) {
             File file = new File(Config.warLoc + "/upload/" + uname + "/" + tmpFile);
             File desFile = new File(Config.warLoc + "/upload/" + uname + "/" + desLoc + "/" + file.getName());
-            try {
-                FileUtils.copyFile(file, desFile);
-            } catch (FileExistsException e) {
+            //如果是同一个文件
+            if (!file.getAbsolutePath().equals(desFile.getAbsolutePath())) {
+                try {
+                    //区分文件还是目录
+                    if (file.isFile()) {
+                        FileUtils.copyFile(file, desFile);
+                    } else {
+                        FileUtils.copyDirectory(file, desFile);
+                    }
+                } catch (FileExistsException e) {
 
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
             }
         }
-        request.getSession().removeAttribute("tmpFile");
         return true;
     }
 
@@ -182,6 +214,7 @@ public class FileAction extends HttpServlet {
             File file = new File(Config.warLoc + "/upload/" + uname + "/" + tmpFile);
             File desFile = new File(Config.warLoc + "/upload/" + uname + "/" + desLoc + "/" + file.getName());
             try {
+                //区分文件还是目录
                 if (file.isFile()) {
                     FileUtils.moveFile(file, desFile);
                 } else {
@@ -194,7 +227,6 @@ public class FileAction extends HttpServlet {
                 return false;
             }
         }
-        request.getSession().removeAttribute("tmpFile");
         return true;
     }
 

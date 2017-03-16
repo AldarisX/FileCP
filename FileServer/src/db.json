@@ -1,7 +1,0 @@
-{
-  "url": "jdbc:mysql://127.0.0.1:3306/",
-  "dbName": "n_filecp",
-  "driver": "com.mysql.jdbc.Driver",
-  "user": "root",
-  "passwd": "aldaris"
-}

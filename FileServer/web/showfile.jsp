@@ -1,3 +1,4 @@
+<%@ page import="com.crocoro.model.User" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
@@ -6,10 +7,23 @@
 
     String loc = request.getParameter("loc") == null ? "/" : request.getParameter("loc") + "/";
 
-    String uname = (session.getAttribute("uname") != null) ? (String) session.getAttribute("uname") : "";
-    if (uname.equals("")) {
-        out.println("请先登陆");
-        return;
+    String uname;
+    String token = request.getParameter("token");
+    if (token != null) {
+        User u = new User();
+        u.getUserByToken(token);
+        if (u.getUname() == null) {
+            response.reset();
+            return;
+        }
+        uname = u.getUname();
+        session.setAttribute("uname", uname);
+    } else {
+        uname = (session.getAttribute("uname") != null) ? (String) session.getAttribute("uname") : "";
+        if (uname.equals("")) {
+            out.println("请先登陆");
+            return;
+        }
     }
 
     ArrayList<String> tmpFiles = (ArrayList<String>) session.getAttribute("tmpFile");
@@ -214,7 +228,8 @@
                 }
 
                 function loadNext() {
-                    var start = currentChunk * chunkSize, end = start + chunkSize >= file.size ? file.size : start + chunkSize;
+                    var start = currentChunk * chunkSize,
+                        end = start + chunkSize >= file.size ? file.size : start + chunkSize;
 
                     fileReader.readAsBinaryString(blobSlice.call(file, start, end));
                 }

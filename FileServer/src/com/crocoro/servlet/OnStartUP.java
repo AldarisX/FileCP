@@ -28,7 +28,6 @@ public class OnStartUP extends HttpServlet {
      */
     public OnStartUP() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
     /**
@@ -59,7 +58,7 @@ public class OnStartUP extends HttpServlet {
         }
 
         System.out.println("配置数据库属性");
-        File dbJson = new File(Config.warLoc + "/WEB-INF/classes/db.json");
+        File dbJson = new File(Config.warLoc + "/WEB-INF/classes/Config.json");
         Scanner scanner = null;
         StringBuilder jsonBuffer = new StringBuilder();
         try {
@@ -76,11 +75,13 @@ public class OnStartUP extends HttpServlet {
             }
         }
         JSONObject dbOBJ = JSONObject.fromObject(jsonBuffer.toString());
-        JDBCUtils.url = dbOBJ.getString("url");
+        JDBCUtils.url = dbOBJ.getString("dbUrl");
         JDBCUtils.dbName = dbOBJ.getString("dbName");
-        JDBCUtils.driver = dbOBJ.getString("driver");
-        JDBCUtils.user = dbOBJ.getString("user");
-        JDBCUtils.passwd = dbOBJ.getString("passwd");
+        JDBCUtils.driver = dbOBJ.getString("dbDriver");
+        JDBCUtils.user = dbOBJ.getString("dbUser");
+        JDBCUtils.passwd = dbOBJ.getString("dbPasswd");
+
+        Config.adminPasswd = dbOBJ.getString("webAdminPasswd");
 
         try {
             new JDBCUtils();

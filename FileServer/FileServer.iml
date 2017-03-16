@@ -22,5 +22,6 @@
     <orderEntry type="library" exported="" name="lib1" level="project" />
     <orderEntry type="library" exported="" name="lib" level="project" />
     <orderEntry type="library" exported="" scope="PROVIDED" name="Tomcat 9.0.0.M13" level="application_server_libraries" />
+    <orderEntry type="library" exported="" scope="PROVIDED" name="Tomcat 9.0.0.M15" level="application_server_libraries" />
   </component>
 </module>

@@ -1,5 +1,6 @@
 package com.crocoro.servlet;
 
+import com.crocoro.model.User;
 import com.crocoro.sql.JDBCUtils;
 import com.crocoro.tool.Base64Tool;
 import com.crocoro.tool.TimeTool;
@@ -39,10 +40,23 @@ public class Upload extends HttpServlet {
         //获取项目的路径
         String root = request.getSession().getServletContext().getRealPath("/");
 
-        //取得用户名
-        String uname = (request.getSession().getAttribute("uname") != null) ? (String) request.getSession().getAttribute("uname") : "";
-        if (uname.equals("")) {
-            return;
+        String uname;
+        String token = request.getParameter("token");
+        if (token != null) {
+            User u = new User();
+            u.getUserByToken(token);
+            if (u.getUname() == null) {
+                response.reset();
+                return;
+            }
+            uname = u.getUname();
+        } else {
+            //取得用户名
+            uname = (request.getSession().getAttribute("uname") != null) ? (String) request.getSession().getAttribute("uname") : "";
+            if (uname.equals("")) {
+                response.reset();
+                return;
+            }
         }
 
         //取得上载的路径
@@ -100,6 +114,7 @@ public class Upload extends HttpServlet {
                 System.out.println("不存在文件,即将创建" + fileLoc + fileName);
             }
         } catch (SQLException e) {
+            response.reset();
             e.printStackTrace();
             return;
         }
@@ -110,6 +125,7 @@ public class Upload extends HttpServlet {
             ServletFileUpload upload = new ServletFileUpload(factory);
             upload.setHeaderEncoding("UTF-8");
             if (!ServletFileUpload.isMultipartContent(request)) {
+                response.reset();
                 return;
             }
 
@@ -137,6 +153,7 @@ public class Upload extends HttpServlet {
                 }
             }
         } catch (Exception e) {
+            response.reset();
             e.printStackTrace();
         }
     }
