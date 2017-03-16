@@ -9,4 +9,14 @@
         <servlet-class>com.crocoro.servlet.OnStartUP</servlet-class>
         <load-on-startup>0</load-on-startup>
     </servlet>
+
+    <filter>
+        <filter-name>downFilter</filter-name>
+        <filter-class>com.crocoro.servlet.DownloadFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>downFilter</filter-name>
+        <url-pattern>/upload/*</url-pattern>
+    </filter-mapping>
 </web-app>
