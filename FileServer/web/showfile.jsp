@@ -57,12 +57,13 @@
                         fType = "文件";
                     }
                     var fName = uFile.name;
-                    var btnText = "<button onclick='delFile(\"" + fName + "\")'>删除</button><button onclick='rename(\"" + fName + "\")'>重命名</button>";
+                    var btnText = "<button onclick='rename(\"" + fName + "\")'>重命名</button>";
                     if (!uFile.select) {
                         btnText += "<button onclick='selectFile(\"" + fName + "\")'>选择</button>";
                     } else {
                         btnText += "<button onclick='selectFile(\"" + fName + "\")'>取消选择</button>";
                     }
+                    btnText += "<button onclick='delFile(\"" + fName + "\")'>删除</button>";
                     if (uFile.file) {
                         $(".fileTable").append("<tr><td><a href='" + uFile.loc + "'>" + fName + "</a></td><td>" + fType + "</td><td>" + uFile.time + "</td><td>" + btnText + "</td></tr>");
                     } else {
@@ -121,8 +122,8 @@
             if (tarName != null) {
                 $.post("fileAction.do", {
                     code: "rename",
-                    fileLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + tarName),
-                    desFileName: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + fileName)
+                    fileLoc: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + fileName),
+                    desFileName: encodeURIComponent(decodeURIComponent(curDirLoc) + "/" + tarName)
                 }, function (data, status) {
                     if (data == "200") {
 //                        alert("删除成功");

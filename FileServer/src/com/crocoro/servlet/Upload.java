@@ -35,6 +35,10 @@ public class Upload extends HttpServlet {
         //获取参数
         String fileName = new String(Base64Tool.decode(request.getParameter("fileName")));
         String fileLoc = new String(Base64Tool.decode(request.getParameter("fileloc")));
+        if (fileLoc.contains("..")) {
+            response.reset();
+            return;
+        }
         String fileMD5 = request.getParameter("md5");
 
         //获取项目的路径
@@ -100,7 +104,7 @@ public class Upload extends HttpServlet {
                         int locFileID = rs.getInt("id");
                         String locFileTime = rs.getString("utime");
                         //重命名文件
-                        File bak = new File(uploadPath, fileName + "." + TimeTool.convSqlDate(locFileTime) + ".bak");
+                        File bak = new File(uploadPath, fileName + "." + TimeTool.convSqlDate(locFileTime) + ".webbak");
                         FileUtils.moveFile(f, bak);
                         //修改数据库
                         ps = jdbc.getPST("UPDATE `file` SET `name`=? WHERE `id`=?;");

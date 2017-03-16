@@ -33,7 +33,6 @@ public class Login extends javax.servlet.http.HttpServlet {
             if (rs.next()) {
                 //设置session
                 request.getSession().setAttribute("uname", uname);
-                System.out.println("session");
                 //如果没有用户目录就创建用户目录
                 File userDir = new File(Config.warLoc + "/upload/" + uname);
                 if (!userDir.exists()) {
@@ -42,7 +41,6 @@ public class Login extends javax.servlet.http.HttpServlet {
                 response.sendRedirect("showfile.jsp");
             } else {
                 PrintWriter out = response.getWriter();
-                System.out.println("用户名或密码错误");
                 out.println("用户名或密码错误");
             }
         } catch (SQLException e) {

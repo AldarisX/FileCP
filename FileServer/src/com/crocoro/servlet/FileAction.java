@@ -134,13 +134,18 @@ public class FileAction extends HttpServlet {
 
     public boolean rename(String uname, String fileLoc, String desFileName, HttpServletRequest request) {
         fileLoc = doFileLocCheck(fileLoc);
+        desFileName = doFileLocCheck(desFileName);
         if (fileLoc == null) {
             return false;
         }
         File file = new File(Config.warLoc + "/upload/" + uname + "/" + fileLoc);
         File desFile = new File(Config.warLoc + "/upload/" + uname + "/" + desFileName);
         try {
-            FileUtils.moveFile(file, desFile);
+            if (file.isFile()) {
+                FileUtils.moveFile(file, desFile);
+            } else {
+                FileUtils.moveDirectory(file, desFile);
+            }
             //判断选择的文件
             String tmpFile = (String) request.getSession().getAttribute("tmpFile");
             if (tmpFile != null) {
@@ -235,7 +240,11 @@ public class FileAction extends HttpServlet {
             return null;
         } else {
             try {
-                return URLDecoder.decode(fileLoc, "UTF-8");
+                fileLoc = URLDecoder.decode(fileLoc, "UTF-8");
+                if (fileLoc.contains("..")) {
+                    return null;
+                }
+                return fileLoc;
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
                 return null;
