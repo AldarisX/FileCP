@@ -3,6 +3,7 @@ package com.crocoro.servlet;
 import com.crocoro.model.User;
 import com.crocoro.sql.JDBCUtils;
 import com.crocoro.tool.Base64Tool;
+import com.crocoro.tool.MD5Tool;
 import com.crocoro.tool.TimeTool;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -39,7 +40,7 @@ public class Upload extends HttpServlet {
             response.reset();
             return;
         }
-        String fileMD5 = request.getParameter("md5");
+        String fileMD5 = request.getParameter("md5").toLowerCase();
 
         //获取项目的路径
         String root = request.getSession().getServletContext().getRealPath("/");
@@ -99,19 +100,22 @@ public class Upload extends HttpServlet {
                         ps.setString(2, fileLoc);
                         ps.setString(3, fileName);
                         rs = jdbc.getQuery(ps);
-                        rs.next();
-                        //获取文件ID
-                        int locFileID = rs.getInt("id");
-                        String locFileTime = rs.getString("utime");
-                        //重命名文件
-                        File bak = new File(uploadPath, fileName + "." + TimeTool.convSqlDate(locFileTime) + ".webbak");
-                        FileUtils.moveFile(f, bak);
-                        //修改数据库
-                        ps = jdbc.getPST("UPDATE `file` SET `name`=? WHERE `id`=?;");
-                        ps.setString(1, bak.getName());
-                        ps.setInt(2, locFileID);
-                        jdbc.getUpdate(ps);
-                        System.out.println("备份文件" + uploadPath + fileName + "到" + bak.getAbsolutePath());
+                        if (rs.next()) {
+                            //获取文件ID
+                            int locFileID = rs.getInt("id");
+                            String locFileTime = rs.getString("utime");
+                            //重命名文件
+                            File bak = new File(uploadPath, fileName + "." + TimeTool.convSqlDate(locFileTime) + ".webbak");
+                            FileUtils.moveFile(f, bak);
+                            //修改数据库
+                            ps = jdbc.getPST("UPDATE `file` SET `name`=? WHERE `id`=?;");
+                            ps.setString(1, bak.getName());
+                            ps.setInt(2, locFileID);
+                            jdbc.getUpdate(ps);
+                            System.out.println("备份文件" + uploadPath + fileName + "到" + bak.getAbsolutePath());
+                        } else {
+                            //这里需要处理文件已经存在,但是数据库没有的情况
+                        }
                     }
                 }
             } else {
@@ -143,6 +147,14 @@ public class Upload extends HttpServlet {
                         String sourcefileName = file.getName();
                         File uf = new File(uploadPath + "/" + sourcefileName);
                         file.write(uf);
+
+                        String reMD5 = new MD5Tool().fileMD5(uf.getAbsolutePath()).toLowerCase();
+                        System.out.println(reMD5 + ":" + fileMD5);
+                        if (!reMD5.equals(fileMD5)) {
+                            response.sendError(HttpServletResponse.SC_BAD_GATEWAY);
+                            return;
+                        }
+
                         PreparedStatement ps = jdbc.getPST("INSERT INTO `file` (`path`, `name`, `md5`, `uname`) VALUES (?, ?, ?, ?);");
                         ps.setString(1, fileLoc);
                         ps.setString(2, fileName);

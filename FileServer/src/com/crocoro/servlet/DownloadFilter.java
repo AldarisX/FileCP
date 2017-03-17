@@ -20,8 +20,8 @@ public class DownloadFilter implements Filter {
     }
 
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
-        chain.doFilter(req, resp);
         resp.reset();
+//        chain.doFilter(req, resp);
         long pos = 0;
         HttpServletRequest httpServletRequest = (HttpServletRequest) req;
         HttpServletResponse httpServletResponse = (HttpServletResponse) resp;
@@ -39,16 +39,16 @@ public class DownloadFilter implements Filter {
         if (f.exists()) {
             is = new FileInputStream(f);
             long fSize = f.length();
-            byte xx[] = new byte[4096];
+            byte xx[] = new byte[32768];
             httpServletResponse.setHeader("Accept-Ranges", "bytes");
             httpServletResponse.setHeader("Content-Length", fSize + "");
-            httpServletResponse.setHeader("Content-Disposition", "attachment;filename=" + reqURL);
+            httpServletResponse.setHeader("Content-Disposition", "attachment;filename=" + f.getName());
             if (httpServletRequest.getHeader("Range") != null) {
                 // 若客户端传来Range，说明之前下载了一部分，设置206状态(SC_PARTIAL_CONTENT)
                 httpServletResponse.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 pos = Long.parseLong(httpServletRequest.getHeader("Range").replaceAll("bytes=", "").replaceAll("-", ""));
             }
-            if (pos != 0) {
+//            if (pos != 0) {
                 String contentRange = new StringBuffer("bytes ").append(
                         new Long(pos).toString()).append("-").append(
                         new Long(fSize - 1).toString()).append("/").append(
@@ -67,7 +67,7 @@ public class DownloadFilter implements Filter {
                         all = true;
                     }
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -77,7 +77,7 @@ public class DownloadFilter implements Filter {
                     is.close();
                 if (os != null)
                     os.close();
-            }
+//            }
         } else {
             ((HttpServletResponse) resp).sendError(HttpServletResponse.SC_NOT_FOUND);
         }
